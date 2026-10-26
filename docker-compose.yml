@@ -1,0 +1,39 @@
+services:
+  vitima:
+    build: ./vitima
+    volumes:
+      - volume_logs:/var/log/vitima
+    networks:
+      - rede_laboratorio
+    ports:
+      - "127.0.0.1:5000:5000"
+
+  ids:
+    build: ./ids
+    network_mode: "service:vitima"
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - volume_logs:/var/log/vitima:ro
+      - volume_db:/data
+    depends_on:
+      - vitima
+
+  dashboard:
+    build: ./dashboard
+    volumes:
+      - volume_db:/data:ro
+    networks:
+      - rede_laboratorio
+    depends_on:
+      - ids
+
+volumes:
+  volume_logs:
+  volume_db:
+
+networks:
+  rede_laboratorio:
+    driver: bridge
+    internal: true

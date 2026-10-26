@@ -15,7 +15,7 @@ atacante ──ataques──► vitima (Portal Fatec, Flask)
                        dashboard ◄── alerts.db (SQLite) ◄── db.py ◄── fila_alertas
 ```
 
-O contêiner `ids` compartilha a rede da vítima (`network_mode: "service:vitima"`), por isso enxerga todo pacote que chega a ela. O `access.log` e o `alerts.db` ficam em volumes compartilhados entre os contêineres.
+O contêiner `ids` compartilha a pilha de rede da vítima (`network_mode: "service:vitima"`) e observa os pacotes que chegam a essa pilha; isso não faz todo o tráfego passar pelo IDS. O `access.log` e o `alerts.db` ficam em volumes compartilhados entre os contêineres.
 
 ## Estrutura prevista
 
@@ -89,7 +89,19 @@ O `docker-compose.yml` é do Henrique. Os requisitos do contêiner `ids` (rede c
 
 ## Como rodar
 
-Depois que o `docker-compose.yml` existir:
+O `docker-compose.yml` já registra os contratos de integração. Ainda depende dos
+componentes reais de Matheus (`vitima/`), Enzo (`dashboard/`) e Andrey (`ids/db.py`
+e a estratégia SQLite): até eles chegarem, `docker compose up --build` não terá
+os contextos de build necessários. O arquivo preserva `vitima` numa rede isolada,
+usa `ids` com `network_mode: "service:vitima"`, somente `NET_RAW`/`NET_ADMIN`,
+`volume_logs` em modo leitura e `volume_db` persistente. A montagem somente
+leitura do dashboard deve ser validada com WAL/journal do SQLite.
+
+A vítima usa como padrão `http://127.0.0.1:5000` (`127.0.0.1:5000:5000` no
+Compose), portanto não fica exposta à rede externa. A porta do dashboard será
+definida quando a implementação dele estiver disponível.
+
+Depois da integração, a inicialização será:
 
 ```
 docker compose up --build
