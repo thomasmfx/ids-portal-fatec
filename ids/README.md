@@ -100,6 +100,20 @@ Depois de um alerta, o detector fica uma janela inteira sem alertar, para o floo
 
 Para testar: `hping3 -S --flood -p 80 <ip-da-vitima>` (com `--rand-source` para o caso de IPs forjados).
 
+## Detector de Port Scan (`detectores/detect_portscan.py`, T1046)
+
+O detector observa somente pacotes TCP IPv4 com SYN ativo e ACK inativo, sem reter
+pacotes (`store=False`). Para cada IP de origem, conta portas TCP de destino
+**distintas** numa janela deslizante. O padrão é 10 portas em 30 s
+(`LIMITE_PORTAS` e `JANELA_SEG`); são parâmetros de heurística, não prova de
+intrusão. Ao atingir o limite, gera um alerta `Port Scan` com MITRE `T1046` e
+permanece em silêncio pelo tamanho da janela.
+
+Ele não analisa tráfego não TCP, pode não detectar scans lentos e pode produzir
+falsos positivos para IPs compartilhados ou atrás de NAT. Um SYN representa uma
+tentativa de conexão, não uma invasão confirmada. O IDS apenas alerta; ele não
+bloqueia tráfego.
+
 ## Testes
 
 Os testes usam pytest e ficam em `ids/tests/test_<nome>.py`. O pytest está no `requirements-dev.txt` e entra só no estágio `teste` do Dockerfile, fora da imagem que roda o IDS:
