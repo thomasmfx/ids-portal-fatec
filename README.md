@@ -81,7 +81,9 @@ O `db.py` (Andrey) expõe `consumir(fila_alertas)`, que lê a fila e para ao rec
 
 ### 4. `db.py` → dashboard
 
-O esquema da tabela no SQLite é combinado entre Andrey (`db.py`) e Enzo (dashboard). O arquivo fica no volume compartilhado `volume_db`.
+O `db.py` grava `/data/alerts.db` no volume compartilhado `volume_db`. O contrato
+da tabela `alertas` está documentado no [README do IDS](ids/README.md); o
+dashboard deve consultá-la em modo somente leitura.
 
 ### 5. docker-compose
 
@@ -90,12 +92,12 @@ O `docker-compose.yml` é do Henrique. Os requisitos do contêiner `ids` (rede c
 ## Como rodar
 
 O `docker-compose.yml` já registra os contratos de integração. Ainda depende dos
-componentes reais de Matheus (`vitima/`), Enzo (`dashboard/`) e Andrey (`ids/db.py`
-e a estratégia SQLite): até eles chegarem, `docker compose up --build` não terá
+componentes reais de Matheus (`vitima/`) e Enzo (`dashboard/`): até eles chegarem, `docker compose up --build` não terá
 os contextos de build necessários. O arquivo preserva `vitima` numa rede isolada,
 usa `ids` com `network_mode: "service:vitima"`, somente `NET_RAW`/`NET_ADMIN`,
 `volume_logs` em modo leitura e `volume_db` persistente. A montagem somente
-leitura do dashboard deve ser validada com WAL/journal do SQLite.
+leitura do dashboard usa o journal SQLite padrão (`DELETE`), sem exigir que o
+dashboard crie arquivos auxiliares no volume somente leitura.
 
 A vítima usa como padrão `http://127.0.0.1:5000` (`127.0.0.1:5000:5000` no
 Compose), portanto não fica exposta à rede externa. A porta do dashboard será

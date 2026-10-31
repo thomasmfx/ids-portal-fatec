@@ -74,7 +74,35 @@ Nos dois helpers, o parâmetro `agora` existe para os testes simularem o tempo.
 
 O `db.py` precisa expor `consumir(fila_alertas)`. A função faz `fila_alertas.get()` em loop e grava cada alerta. Quando recebe `None`, ela termina: é o sinal de que o contêiner está parando e não vem mais nada.
 
-Enquanto o `db.py` não existir, o core imprime cada alerta como JSON no stdout, e eles aparecem no `docker logs`.
+O banco fica em `/data/alerts.db` (volume `volume_db`) e possui a tabela `alertas`:
+
+| Coluna | Tipo | Uso |
+|---|---|---|
+| `id` | inteiro | chave primária interna, crescente |
+| `timestamp` | texto | instante ISO 8601 UTC fornecido pelo detector |
+| `tipo` | texto | nome do alerta, por exemplo `Port Scan` |
+| `ip_origem` | texto | IP associado ao evento |
+| `descricao` | texto | explicação legível do alerta |
+| `mitre` | texto | técnica MITRE ATT&CK |
+| `severidade` | texto | `baixa`, `media` ou `alta` |
+
+O dashboard deve abrir esse arquivo somente para leitura e consultar `alertas`.
+O IDS usa o journal SQLite padrão (`DELETE`), em vez de WAL, para não exigir
+que o dashboard crie arquivos auxiliares graváveis; qualquer journal temporário
+é criado pelo próprio IDS no volume gravável.
+
+## Detector de SQL Injection e XSS (`detectores/detect_sqli.py`, T1190)
+
+O detector acompanha o `access.log` e analisa o caminho já URL-decodificado. Ele
+alerta para assinaturas conservadoras de SQLi (`UNION SELECT`, tautologias como
+`' OR 1=1`, funções de delay e User-Agent do `sqlmap`) e de XSS (`<script>`,
+`javascript:` e handlers de evento em tags HTML). Cada combinação de IP e tipo
+fica 30 segundos em silêncio depois do alerta, evitando repetição durante o
+mesmo ataque.
+
+Como toda detecção baseada em assinaturas, ele pode não reconhecer payloads
+ofuscados ou inéditos; um alerta representa atividade suspeita, não confirmação
+de exploração bem-sucedida.
 
 ## Trecho do docker-compose (Henrique)
 
