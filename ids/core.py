@@ -31,7 +31,10 @@ def descobrir_detectores(pasta=PASTA / "detectores"):
 
 def consumir_console(fila_alertas):
     while (alerta := fila_alertas.get()) is not None:
-        print(json.dumps(alerta, ensure_ascii=False), flush=True)
+        # Uma única escrita evita que uma linha de logging de outra thread entre
+        # entre o JSON e sua quebra de linha.
+        sys.stdout.write(json.dumps(alerta, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
 
 
 def obter_consumidor():
