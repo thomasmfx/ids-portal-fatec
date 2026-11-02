@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Consulta de Disciplinas{% endblock %}
+{% block conteudo %}
+<div class="card">
+    <h1>Grade e Consulta de Disciplinas</h1>
+    <p>Pesquise por nome ou código da disciplina no catálogo do curso.</p>
+    <form action="/busca" method="get" style="display:flex; gap:0.5rem;">
+        <input type="text" name="q" value="{{ termo }}" placeholder="Ex.: Segurança, ISI002..." style="margin-bottom:0;">
+        <button type="submit">Pesquisar</button>
+    </form>
+</div>
+
+<div class="card">
+    {% if termo %}
+        {# Renderização sem escape (| safe) intencional para demonstrar XSS refletido no laboratório #}
+        <h2>Resultados para: {{ termo | safe }}</h2>
+    {% else %}
+        <h2>Disciplinas Ofertadas</h2>
+    {% endif %}
+
+    {% if erro_sql %}
+        <div class="alerta-erro">Erro na consulta SQLite: <code>{{ erro_sql }}</code></div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Disciplina</th>
+                <th>Docente</th>
+                <th>Horário</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in disciplinas %}
+            <tr>
+                <td><strong>{{ d.codigo }}</strong></td>
+                <td>{{ d.nome }}</td>
+                <td>{{ d.professor }}</td>
+                <td>{{ d.horario }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">Nenhuma disciplina encontrada para o filtro informado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

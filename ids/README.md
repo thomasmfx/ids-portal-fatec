@@ -142,6 +142,16 @@ falsos positivos para IPs compartilhados ou atrás de NAT. Um SYN representa uma
 tentativa de conexão, não uma invasão confirmada. O IDS apenas alerta; ele não
 bloqueia tráfego.
 
+## Detector de Fuzzing de Diretórios (`detectores/detect_fuzzing.py`, T1595)
+
+O detector acompanha o `access.log` e conta respostas HTTP `404` por IP de origem
+numa janela deslizante (padrão: 15 respostas `404` em 30 s, configurável em
+`LIMITE_404` e `JANELA_SEG`). Ao atingir o limiar, gera um alerta
+`Fuzzing de Diretórios` com MITRE `T1595` e severidade `media`, permanecendo em
+silêncio durante a janela para não repetir alertas na mesma varredura.
+
+Para testar: `gobuster dir -u http://127.0.0.1:5000 -w wordlist.txt` ou `dirb http://127.0.0.1:5000`.
+
 ## Testes
 
 Os testes usam pytest e ficam em `ids/tests/test_<nome>.py`. O pytest está no `requirements-dev.txt` e entra só no estágio `teste` do Dockerfile, fora da imagem que roda o IDS:

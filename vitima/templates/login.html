@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Área do Aluno{% endblock %}
+{% block conteudo %}
+<div class="card" style="max-width: 440px; margin: 0 auto;">
+    <h1>Autenticação — Área do Aluno</h1>
+    <p>Informe seu usuário institucional e senha de acesso.</p>
+
+    {% if erro %}
+        <div class="alerta-erro">{{ erro }}</div>
+    {% endif %}
+
+    <form action="/login" method="post">
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="usuario" value="{{ usuario_informado or '' }}" autocomplete="username" required>
+
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" autocomplete="current-password" required>
+
+        <button type="submit" style="width:100%;">Acessar Portal</button>
+    </form>
+</div>
+{% endblock %}

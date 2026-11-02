@@ -92,8 +92,8 @@ O `docker-compose.yml` é do Henrique. Os requisitos do contêiner `ids` (rede c
 ## Como rodar
 
 O `docker-compose.yml` já registra os contratos de integração. Ainda depende dos
-componentes reais de Matheus (`vitima/`) e Enzo (`dashboard/`): até eles chegarem, `docker compose up --build` não terá
-os contextos de build necessários. O arquivo preserva `vitima` numa rede isolada,
+componentes reais de Enzo (`dashboard/`): até ele chegar, é possível subir apenas a vítima e o IDS com `docker compose up --build vitima ids` (veja o [README da vítima](vitima/README.md)).
+O arquivo preserva `vitima` numa rede isolada,
 usa `ids` com `network_mode: "service:vitima"`, somente `NET_RAW`/`NET_ADMIN`,
 `volume_logs` em modo leitura e `volume_db` persistente. A montagem somente
 leitura do dashboard usa o journal SQLite padrão (`DELETE`), sem exigir que o

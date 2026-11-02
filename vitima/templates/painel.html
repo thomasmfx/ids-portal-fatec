@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Boletim Acadêmico{% endblock %}
+{% block conteudo %}
+<div class="card">
+    <div class="alerta-ok">Bem-vindo, <strong>{{ dados_usuario.nome }}</strong> (RA: {{ dados_usuario.ra }} · Perfil: {{ dados_usuario.perfil }}).</div>
+    <h1>Resumo Acadêmico — 5º Semestre ADS</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Disciplina</th>
+                <th>Média</th>
+                <th>Faltas</th>
+                <th>Situação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for n in notas %}
+            <tr>
+                <td>{{ n.disciplina }}</td>
+                <td>{{ "%.1f"|format(n.media) }}</td>
+                <td>{{ n.faltas }}</td>
+                <td><span class="tag">{{ n.situacao }}</span></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">Nenhum lançamento encontrado para este usuário.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

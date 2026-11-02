@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titulo %}Erro {{ codigo }}{% endblock %}
+{% block conteudo %}
+<div class="card" style="text-align:center; padding: 2.25rem 1.25rem;">
+    <h1>HTTP {{ codigo }} — {{ titulo }}</h1>
+    <p>{{ detalhe }}</p>
+    <a class="botao" href="/">Voltar ao Início</a>
+</div>
+{% endblock %}
