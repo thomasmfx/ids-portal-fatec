@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDS Portal Fatec - Painel de Segurança</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .navbar {
+      background-color: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    .card-metric {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      --bs-card-color: #f8fafc;
+    }
+    .label-metric {
+      color: #cbd5e1;
+      letter-spacing: 0.03em;
+    }
+    .table-dark-custom {
+      --bs-table-bg: #1e293b;
+      --bs-table-color: #f8fafc;
+      --bs-table-striped-bg: #182234;
+      --bs-table-striped-color: #f8fafc;
+      --bs-table-hover-bg: #243247;
+      --bs-table-hover-color: #ffffff;
+      --bs-table-border-color: #334155;
+      color: #f8fafc;
+    }
+    .table-dark-custom th {
+      color: #cbd5e1 !important;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .table-dark-custom td {
+      color: #f8fafc;
+    }
+    .texto-detalhe {
+      color: #e2e8f0 !important;
+    }
+    .badge-alta { background-color: #ef4444; color: #fff; }
+    .badge-media { background-color: #f59e0b; color: #000; }
+    .badge-baixa { background-color: #10b981; color: #fff; }
+    .pulse-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body class="pb-5">
+
+<nav class="navbar navbar-dark px-4 mb-4">
+  <div class="container-fluid d-flex justify-content-between">
+    <span class="navbar-brand mb-0 h1 d-flex align-items-center text-white">
+      <i class="bi bi-shield-lock-fill text-primary me-2 fs-4"></i>
+      IDS Portal Fatec &mdash; Monitor de Segurança
+    </span>
+    <div class="d-flex align-items-center">
+      <span class="pulse-dot"></span>
+      <small class="text-light" id="status-live">Monitoramento Ativo (auto-refresh 3s)</small>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4">
+
+  <!-- Status do Banco -->
+  <div id="aviso-banco" class="alert alert-warning {% if dados.conectado or dados.total_alertas > 0 %}d-none{% endif %} mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Aguardando conexão com a base de dados (o contêiner do IDS ainda não registrou o primeiro alerta).
+  </div>
+
+  <!-- Métricas do Topo -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card card-metric p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="label-metric small fw-bold">TOTAL DE ALERTAS</div>
+            <h2 class="mb-0 fw-bold text-white" id="metric-total">{{ dados.total_alertas }}</h2>
+          </div>
+          <i class="bi bi-bell-fill fs-2 text-primary"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="label-metric small fw-bold">SEVERIDADE ALTA</div>
+            <h2 class="mb-0 fw-bold text-danger" id="metric-altos">{{ dados.altos }}</h2>
+          </div>
+          <i class="bi bi-exclamation-octagon-fill fs-2 text-danger"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="label-metric small fw-bold">SEVERIDADE MÉDIA</div>
+            <h2 class="mb-0 fw-bold text-warning" id="metric-medios">{{ dados.medios }}</h2>
+          </div>
+          <i class="bi bi-exclamation-triangle-fill fs-2 text-warning"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="label-metric small fw-bold">IPS ATACANTES DISTINTOS</div>
+            <h2 class="mb-0 fw-bold text-info" id="metric-ips">{{ dados.ips_unicos }}</h2>
+          </div>
+          <i class="bi bi-person-fill-exclamation fs-2 text-info"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Alertas -->
+  <div class="card card-metric">
+    <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-3">
+      <h5 class="mb-0 fw-bold text-white">
+        <i class="bi bi-activity text-danger me-2"></i>Histórico Recente de Intrusões
+      </h5>
+      <span class="badge bg-secondary text-white" id="badge-contador">{{ dados.alertas|length }} listados</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-dark-custom table-striped table-hover mb-0 align-middle">
+          <thead>
+            <tr class="small">
+              <th scope="col" class="ps-3">DATA / HORA (UTC)</th>
+              <th scope="col">SEVERIDADE</th>
+              <th scope="col">TIPO DE ATAQUE</th>
+              <th scope="col">MITRE ATT&CK</th>
+              <th scope="col">IP ORIGEM</th>
+              <th scope="col" class="pe-3">DETALHES / DESCRIÇÃO</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-alertas">
+            {% if dados.alertas %}
+              {% for a in dados.alertas %}
+                <tr>
+                  <td class="ps-3 font-monospace small text-white">{{ a.timestamp }}</td>
+                  <td>
+                    <span class="badge badge-{{ a.severidade }} text-uppercase px-2 py-1">
+                      {{ a.severidade }}
+                    </span>
+                  </td>
+                  <td class="fw-bold text-white">{{ a.tipo }}</td>
+                  <td><span class="badge bg-dark border border-secondary text-white font-monospace">{{ a.mitre }}</span></td>
+                  <td class="font-monospace text-warning fw-semibold">{{ a.ip_origem }}</td>
+                  <td class="pe-3 small texto-detalhe">{{ a.descricao }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr id="linha-vazia">
+                <td colspan="6" class="text-center py-4 text-light">
+                  <i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>
+                  Nenhum alerta registrado no momento. Sistema operando em segurança.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function escapeHtml(valor) {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Polling a cada 3 segundos para atualizar alertas em tempo real sem recarregar a página
+  async function atualizarDashboard() {
+    try {
+      const resp = await fetch('/api/alertas');
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      document.getElementById('metric-total').textContent = data.total_alertas;
+      document.getElementById('metric-altos').textContent = data.altos;
+      document.getElementById('metric-medios').textContent = data.medios;
+      document.getElementById('metric-ips').textContent = data.ips_unicos;
+      document.getElementById('badge-contador').textContent = data.alertas.length + ' listados';
+
+      const avisoBanco = document.getElementById('aviso-banco');
+      if (!data.conectado && data.total_alertas === 0) {
+        avisoBanco.classList.remove('d-none');
+      } else {
+        avisoBanco.classList.add('d-none');
+      }
+
+      const tbody = document.getElementById('tabela-alertas');
+      if (data.alertas.length === 0) {
+        tbody.innerHTML = `
+          <tr id="linha-vazia">
+            <td colspan="6" class="text-center py-4 text-light">
+              <i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>
+              Nenhum alerta registrado no momento. Sistema operando em segurança.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (const a of data.alertas) {
+        const sev = ['alta', 'media', 'baixa'].includes(a.severidade) ? a.severidade : 'baixa';
+        html += `
+          <tr>
+            <td class="ps-3 font-monospace small text-white">${escapeHtml(a.timestamp)}</td>
+            <td>
+              <span class="badge badge-${sev} text-uppercase px-2 py-1">
+                ${escapeHtml(a.severidade)}
+              </span>
+            </td>
+            <td class="fw-bold text-white">${escapeHtml(a.tipo)}</td>
+            <td><span class="badge bg-dark border border-secondary text-white font-monospace">${escapeHtml(a.mitre)}</span></td>
+            <td class="font-monospace text-warning fw-semibold">${escapeHtml(a.ip_origem)}</td>
+            <td class="pe-3 small texto-detalhe">${escapeHtml(a.descricao)}</td>
+          </tr>
+        `;
+      }
+      tbody.innerHTML = html;
+    } catch (e) {
+      console.error('Falha ao atualizar dashboard:', e);
+    }
+  }
+
+  setInterval(atualizarDashboard, 3000);
+</script>
+
+</body>
+</html>

@@ -91,22 +91,20 @@ O `docker-compose.yml` é do Henrique. Os requisitos do contêiner `ids` (rede c
 
 ## Como rodar
 
-O `docker-compose.yml` já registra os contratos de integração. Ainda depende dos
-componentes reais de Enzo (`dashboard/`): até ele chegar, é possível subir apenas a vítima e o IDS com `docker compose up --build vitima ids` (veja o [README da vítima](vitima/README.md)).
-O arquivo preserva `vitima` numa rede isolada,
-usa `ids` com `network_mode: "service:vitima"`, somente `NET_RAW`/`NET_ADMIN`,
-`volume_logs` em modo leitura e `volume_db` persistente. A montagem somente
-leitura do dashboard usa o journal SQLite padrão (`DELETE`), sem exigir que o
-dashboard crie arquivos auxiliares no volume somente leitura.
+O `docker-compose.yml` sobe os três contêineres integrados (`vitima`, `ids` e
+`dashboard`). O arquivo preserva `vitima` numa rede isolada, usa `ids` com
+`network_mode: "service:vitima"`, somente `NET_RAW`/`NET_ADMIN`, `volume_logs`
+em modo leitura e `volume_db` persistente. A montagem somente leitura do
+dashboard (`volume_db:/data:ro`) usa o journal SQLite padrão (`DELETE`), sem
+exigir que o dashboard crie arquivos auxiliares no volume somente leitura.
 
-A vítima usa como padrão `http://127.0.0.1:5000` (`127.0.0.1:5000:5000` no
-Compose), portanto não fica exposta à rede externa. A porta do dashboard será
-definida quando a implementação dele estiver disponível.
+- **Portal Fatec (vítima):** `http://127.0.0.1:5000` (`127.0.0.1:5000:5000` no Compose)
+- **Dashboard do IDS:** `http://127.0.0.1:8080` (`127.0.0.1:8080:8080` no Compose)
 
-Depois da integração, a inicialização será:
+Para subir o laboratório completo:
 
-```
+```bash
 docker compose up --build
 ```
 
-Cada componente documenta os próprios testes no seu README.
+Cada componente documenta os próprios testes no seu README ([IDS](ids/README.md), [Vítima](vitima/README.md) e [Dashboard](dashboard/README.md)).

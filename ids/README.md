@@ -152,6 +152,17 @@ silêncio durante a janela para não repetir alertas na mesma varredura.
 
 Para testar: `gobuster dir -u http://127.0.0.1:5000 -w wordlist.txt` ou `dirb http://127.0.0.1:5000`.
 
+## Detector de Força Bruta (`detectores/detect_bruteforce.py`, T1110)
+
+O detector acompanha o `access.log` e conta respostas HTTP `401` (falhas de
+autenticação) por IP de origem numa janela deslizante (padrão: 5 respostas `401`
+em 60 s, configurável em `LIMITE_401` e `JANELA_SEG`). Ao atingir o limiar, gera
+um alerta `Força Bruta no Login` com MITRE `T1110` e severidade `alta`,
+permanecendo em silêncio durante a janela para não repetir alertas na mesma
+rajada de tentativas.
+
+Para testar: `hydra -l admin -P wordlist.txt 127.0.0.1 -s 5000 http-get /login` (ou `POST /login` com credenciais inválidas).
+
 ## Testes
 
 Os testes usam pytest e ficam em `ids/tests/test_<nome>.py`. O pytest está no `requirements-dev.txt` e entra só no estágio `teste` do Dockerfile, fora da imagem que roda o IDS:
