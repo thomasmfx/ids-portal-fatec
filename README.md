@@ -101,6 +101,10 @@ exigir que o dashboard crie arquivos auxiliares no volume somente leitura.
 - **Portal Fatec (vítima):** `http://127.0.0.1:5000` (`127.0.0.1:5000:5000` no Compose)
 - **Dashboard do IDS:** `http://127.0.0.1:8080` (`127.0.0.1:8080:8080` no Compose)
 
+As portas locais podem ser alteradas em `.env` (`VITIMA_PORTA` e
+`DASHBOARD_PORTA`). O arquivo `.env.example` contém os valores padrão. Após
+alterar uma porta, execute `docker compose up -d` para recriar os serviços.
+
 Para subir o laboratório completo:
 
 ```bash
