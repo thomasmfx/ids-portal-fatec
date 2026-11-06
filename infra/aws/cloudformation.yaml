@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Laboratorio IDS em EC2, acessivel somente por Session Manager.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    Description: Instancia x86_64; confirme preco e elegibilidade na regiao.
+  DiskSize:
+    Type: Number
+    Default: 12
+    MinValue: 12
+    Description: Tamanho do disco raiz gp3 em GiB.
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.42.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.42.1.0/24
+      MapPublicIpOnLaunch: true
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+  InternetRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  SubnetRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      RouteTableId: !Ref RouteTable
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Sem portas de entrada; administracao por Session Manager.
+      VpcId: !Ref Vpc
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+  Instance:
+    Type: AWS::EC2::Instance
+    DependsOn: InternetRoute
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT15M
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet
+      SecurityGroupIds: [!Ref SecurityGroup]
+      IamInstanceProfile: !Ref InstanceProfile
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpTokens: required
+        HttpPutResponseHopLimit: 1
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: !Ref DiskSize
+            Encrypted: true
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: ids-portal-fatec
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -Eeuo pipefail
+          trap '/opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource Instance --region ${AWS::Region} || true' ERR
+          dnf install -y docker git curl iptables
+          systemctl enable --now docker
+          mkdir -p /usr/local/lib/docker/cli-plugins /opt/ids-portal-fatec
+          curl -fsSL --retry 3 https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+          chmod 755 /usr/local/lib/docker/cli-plugins/docker-compose
+          docker compose version
+          cat > /etc/systemd/system/ids-portal.service <<'EOF'
+          [Unit]
+          Description=Laboratorio IDS Portal Fatec
+          Requires=docker.service
+          After=docker.service network-online.target
+          Wants=network-online.target
+          ConditionPathExists=/opt/ids-portal-fatec/docker-compose.yml
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          WorkingDirectory=/opt/ids-portal-fatec
+          Environment=DOCKER_BUILDKIT=0
+          Environment=COMPOSE_DOCKER_CLI_BUILD=0
+          ExecStartPre=/bin/sh -c '/usr/sbin/iptables -C DOCKER-USER -d 169.254.169.254/32 -j DROP || /usr/sbin/iptables -I DOCKER-USER -d 169.254.169.254/32 -j DROP'
+          ExecStart=/usr/bin/docker compose up -d --no-build
+          ExecStop=/usr/bin/docker compose down
+          TimeoutStartSec=180
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          systemctl daemon-reload
+          systemctl enable ids-portal.service
+          /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource Instance --region ${AWS::Region}
+
+Outputs:
+  InstanceId:
+    Description: ID da instancia para Session Manager e para iniciar/parar.
+    Value: !Ref Instance
+  Region:
+    Value: !Ref AWS::Region
