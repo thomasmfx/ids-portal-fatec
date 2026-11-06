@@ -3,6 +3,7 @@ import time
 from scapy.all import IP, TCP, sniff
 
 from alerta import novo_alerta
+from detectores.captura import interfaces_captura
 from detectores.janela import ContadorPorIp
 
 LIMITE_PORTAS = 10
@@ -41,4 +42,4 @@ class DetectorPortScan:
 
 
 def detectar(fila_alertas):
-    sniff(filter=FILTRO_BPF, prn=DetectorPortScan(fila_alertas).processar, store=False)
+    sniff(iface=interfaces_captura(), filter=FILTRO_BPF, prn=DetectorPortScan(fila_alertas).processar, store=False)

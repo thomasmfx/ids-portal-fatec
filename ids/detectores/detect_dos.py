@@ -5,6 +5,7 @@ from collections import Counter, deque
 from scapy.all import IP, TCP, sniff
 
 from alerta import novo_alerta
+from detectores.captura import interfaces_captura
 
 LIMITE_SYN = 200
 JANELA_SEG = 5.0
@@ -49,4 +50,4 @@ class DetectorSynFlood:
 
 
 def detectar(fila_alertas):
-    sniff(filter=FILTRO_BPF, prn=DetectorSynFlood(fila_alertas).processar, store=False)
+    sniff(iface=interfaces_captura(), filter=FILTRO_BPF, prn=DetectorSynFlood(fila_alertas).processar, store=False)
